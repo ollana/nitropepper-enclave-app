@@ -24,44 +24,46 @@ def main():
     while True:
         conn, _addr = vsock.accept()
         print('Received new connection')
-        payload = conn.recv(4096)
+        payload = conn.recv(1024)
 
         # Load the JSON data provided over vsock
         try:
-            parent_app_data = json.loads(payload.decode())
-            kms_credentials = parent_app_data['kms_credentials']
-            kms_region = parent_app_data['kms_region']
+            cipher_text = payload.decode()
+            kms_region = 'us-west-2'
         except Exception as exc: # pylint:disable=broad-except
-            msg = f'Exception ({type(exc)}) while loading JSON data: {str(exc)}'
+            msg = f'Exception ({type(exc)}) while loading data: {str(exc)}'
             content = {
                 'success': False,
                 'error': msg
             }
-            conn.send(str.encode(json.dumps(content)))
+            conn.send(msg.encode())
             conn.close()
             continue
 
         nitro_kms.set_region(kms_region)
-        nitro_kms.set_credentials(kms_credentials)
+        # nitro_kms.set_credentials(kms_credentials)
+        plain_text = process_decrypt(nitro_kms, cipher_text)
+        print("decrypted: "+plain_text)
+        #
+        # if 'action' in parent_app_data:
+        #     if parent_app_data['action'] == 'generate_hash_and_pepper':
+        #         content = process_generate_hash_and_pepper(nitro_kms, parent_app_data)
+        #     elif parent_app_data['action'] == 'validate_credentials':
+        #         content = process_validate_credentials(nitro_kms, parent_app_data)
+        #     else:
+        #         content = {
+        #             'success': False,
+        #             'error': f"Unknown action: {parent_app_data['action']}"
+        #         }
+        #
+        # else:
+        #     content = {
+        #         'success': False,
+        #         'error': 'No action provided'
+        #     }
 
-        if 'action' in parent_app_data:
-            if parent_app_data['action'] == 'generate_hash_and_pepper':
-                content = process_generate_hash_and_pepper(nitro_kms, parent_app_data)
-            elif parent_app_data['action'] == 'validate_credentials':
-                content = process_validate_credentials(nitro_kms, parent_app_data)
-            else:
-                content = {
-                    'success': False,
-                    'error': f"Unknown action: {parent_app_data['action']}"
-                }
+        conn.sendall(plain_text.encode())
 
-        else:
-            content = {
-                'success': False,
-                'error': 'No action provided'
-            }
-
-        conn.send(str.encode(json.dumps(content)))
         conn.close()
         print('Closed connection')
 
@@ -103,6 +105,22 @@ def process_generate_hash_and_pepper(nitro_kms, parent_app_data):
         parent_app_data['kms_key'],
         parent_app_data['password']
     )
+
+
+def process_decrypt(nitro_kms, cipher_text):
+    """Decrypt the pepper, hash the given password with the pepper, and compare the results."""
+    try:
+        plain_text = nitro_kms.kms_decrypt(
+            ciphertext_blob=cipher_text
+        )
+    except Exception as exc: # pylint:disable=broad-except
+        return {
+            'success': False,
+            'error': f'decrypt failed: {str(exc)}'
+        }
+
+    return plain_text
+
 
 def validate_credentials(nitro_kms, password, password_hash_b64, encrypted_pepper_b64):
     """Decrypt the pepper, hash the given password with the pepper, and compare the results."""

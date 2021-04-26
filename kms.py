@@ -81,7 +81,7 @@ class NitroKms():
 
     def kms_decrypt(self, ciphertext_blob):
         """Call the KMS Decrypt API."""
-        amz_target = 'TrentService.Decrypt'
+        amz_target = 'Decrypt'  # TODO-is it action op?
         request_parameters = json.dumps({
             'CiphertextBlob': ciphertext_blob,
             'Recipient': {
