@@ -112,16 +112,13 @@ def process_generate_hash_and_pepper(nitro_kms, parent_app_data):
 def process_decrypt(nitro_kms, cipher_text):
     """Decrypt the pepper, hash the given password with the pepper, and compare the results."""
     try:
-        print("process_decrypt: ",str(cipher_text))
+        print("process_decrypt: ", str(cipher_text))
         plain_text = nitro_kms.kms_decrypt(
             ciphertext_blob=cipher_text
         )
     except Exception as exc: # pylint:disable=broad-except
         print(str(exc))
-        return {
-            'success': False,
-            'error': f'decrypt failed: {str(exc)}'
-        }
+        return 'decrypt failed' + str(exc)
 
     return plain_text
 

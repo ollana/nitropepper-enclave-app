@@ -90,7 +90,7 @@ class NitroKms():
                 'AttestationDocument': self._get_attestation_doc_b64()
             }
         })
-        print("json dumped start")
+        print("json dumped: ", str(request_parameters))
 
         kms_response = self._kms_call(amz_target, request_parameters)
         print("kms response: ", str(kms_response))
@@ -119,6 +119,7 @@ class NitroKms():
             self._public_key,
             len(self._public_key)
         )
+        print("_get_attestation_doc_b64: ", str(libnsm_att_doc_cose_signed))
         return base64.b64encode(libnsm_att_doc_cose_signed).decode('utf-8')
 
     def _kms_call(self, amz_target, request_parameters):
