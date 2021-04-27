@@ -31,8 +31,7 @@ def main():
         try:
             cipher_text = payload.decode()
             print("payload decoded: ", str(cipher_text))
-
-        kms_region = 'us-west-2'
+            kms_region = "us-west-2"
         except Exception as exc: # pylint:disable=broad-except
             msg = f'Exception ({type(exc)}) while loading data: {str(exc)}'
             content = {
