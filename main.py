@@ -24,12 +24,14 @@ def main():
     while True:
         conn, _addr = vsock.accept()
         print('Received new connection')
-        payload = conn.recv(1024)
+        payload = conn.recv(4096)
         print(str(payload))
 
         # Load the data provided over vsock
         try:
-            cipher_text = payload.decode()
+            parent_app_data = json.loads(payload.decode())
+            kms_credentials = parent_app_data['kms_credentials']
+            cipher_text = parent_app_data['cipher']
             print("payload decoded: ", str(cipher_text))
             kms_region = "us-west-2"
         except Exception as exc: # pylint:disable=broad-except
@@ -38,12 +40,12 @@ def main():
                 'success': False,
                 'error': msg
             }
-            conn.send(msg.encode())
+            conn.sendall(str.encode(json.dumps(content)))
             conn.close()
             continue
 
         nitro_kms.set_region(kms_region)
-        # nitro_kms.set_credentials(kms_credentials)
+        nitro_kms.set_credentials(kms_credentials)
         plain_text = process_decrypt(nitro_kms, cipher_text)
         print("decrypted: "+str(plain_text))
         #
@@ -64,7 +66,7 @@ def main():
         #         'error': 'No action provided'
         #     }
 
-        conn.sendall(plain_text.encode())
+        conn.sendall(str.encode(json.dumps(content)))
 
         conn.close()
         print('Closed connection')
