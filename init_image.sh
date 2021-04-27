@@ -1,8 +1,9 @@
 #!/bin/sh
 echo "Starting init"
+#vsock-proxy 8000 kms.us-west-2.amazonaws.com 443 &
 ENCLAVE_ID=$(nitro-cli describe-enclaves | jq -r .[0].EnclaveID)
 
-if [ -z "$ENCLAVE_ID" ]
+if [ -z $ENCLAVE_ID ]
 then
   echo "Starting deleting existing enclave image"
   sudo nitro-cli terminate-enclave --enclave-id $ENCLAVE_ID || echo "failed to delete enclave $ENCLAVE_ID"
