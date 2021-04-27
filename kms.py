@@ -81,6 +81,7 @@ class NitroKms():
 
     def kms_decrypt(self, ciphertext_blob):
         """Call the KMS Decrypt API."""
+        print("kms_decrypt start")
         amz_target = 'Decrypt'  # TODO-is it action op?
         request_parameters = json.dumps({
             'CiphertextBlob': ciphertext_blob,
@@ -89,16 +90,26 @@ class NitroKms():
                 'AttestationDocument': self._get_attestation_doc_b64()
             }
         })
+        print("json dumped start")
+
         kms_response = self._kms_call(amz_target, request_parameters)
+        print("kms response: ", str(kms_response))
         ciphertext_for_recipient_b64 = kms_response['CiphertextForRecipient']
         ciphertext_for_recipient = base64.b64decode(ciphertext_for_recipient_b64)
+        print("kms response decoded: ", str(ciphertext_for_recipient))
 
         enveloped_data = self._cms_parse_enveloped_data(ciphertext_for_recipient)
+        print("after _cms_parse_enveloped_data: ", str(enveloped_data))
+
         (encrypted_symm_key, init_vector, block_size, ciphertext_out) = enveloped_data
         decrypted_symm_key = self._rsa_decrypt(self._rsa_key, encrypted_symm_key)
+        print("after _rsa_decrypt: ", str(decrypted_symm_key))
+
         plaintext_bytes = self._aws_cms_cipher_decrypt(
             ciphertext_out, decrypted_symm_key, block_size, init_vector
         )
+        print("after _aws_cms_cipher_decrypt")
+
         return plaintext_bytes
 
     def _get_attestation_doc_b64(self):

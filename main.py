@@ -25,11 +25,14 @@ def main():
         conn, _addr = vsock.accept()
         print('Received new connection')
         payload = conn.recv(1024)
+        print(str(payload))
 
-        # Load the JSON data provided over vsock
+        # Load the data provided over vsock
         try:
             cipher_text = payload.decode()
-            kms_region = 'us-west-2'
+            print("payload decoded: ", str(cipher_text))
+
+        kms_region = 'us-west-2'
         except Exception as exc: # pylint:disable=broad-except
             msg = f'Exception ({type(exc)}) while loading data: {str(exc)}'
             content = {
@@ -43,7 +46,7 @@ def main():
         nitro_kms.set_region(kms_region)
         # nitro_kms.set_credentials(kms_credentials)
         plain_text = process_decrypt(nitro_kms, cipher_text)
-        print("decrypted: "+plain_text)
+        print("decrypted: "+str(plain_text))
         #
         # if 'action' in parent_app_data:
         #     if parent_app_data['action'] == 'generate_hash_and_pepper':
@@ -110,10 +113,12 @@ def process_generate_hash_and_pepper(nitro_kms, parent_app_data):
 def process_decrypt(nitro_kms, cipher_text):
     """Decrypt the pepper, hash the given password with the pepper, and compare the results."""
     try:
+        print("process_decrypt: ",str(cipher_text))
         plain_text = nitro_kms.kms_decrypt(
             ciphertext_blob=cipher_text
         )
     except Exception as exc: # pylint:disable=broad-except
+        print(str(exc))
         return {
             'success': False,
             'error': f'decrypt failed: {str(exc)}'
