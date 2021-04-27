@@ -66,7 +66,7 @@ def main():
         #         'error': 'No action provided'
         #     }
 
-        conn.sendall(str.encode(json.dumps(content)))
+        conn.sendall(str.encode(json.dumps(plain_text)))
 
         conn.close()
         print('Closed connection')
