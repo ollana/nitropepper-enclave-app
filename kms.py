@@ -13,6 +13,8 @@ from asn1crypto import cms
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.PublicKey import RSA
 from Crypto.Util.Padding import unpad
+# import boto3
+
 
 import libnsm
 
@@ -82,7 +84,7 @@ class NitroKms():
     def kms_decrypt(self, ciphertext_blob):
         """Call the KMS Decrypt API."""
         print("kms_decrypt start")
-        amz_target = 'Decrypt'  # TODO-is it action op?
+        amz_target = 'TrentService.Decrypt'  # TODO-is it action op?
         request_parameters = json.dumps({
             'CiphertextBlob': ciphertext_blob,
             'Recipient': {
@@ -112,6 +114,20 @@ class NitroKms():
 
         return plaintext_bytes
 
+    #
+    # def _decrypt_with_boto(self, cipher_text):
+    #     client = boto3.client('kms')
+    #     recipient_parameters = json.dumps({
+    #             'KeyEncryptionAlgorithm': 'RSAES_OAEP_SHA_1',
+    #             'AttestationDocument': self._get_attestation_doc_b64()
+    #     })
+    #
+    #     response = client.decrypt(
+    #         CiphertextBlob=cipher_text,
+    #         Recipient=recipient_parameters
+    #     )
+
+
     def _get_attestation_doc_b64(self):
         """Get the attestation document from /dev/nsm."""
         libnsm_att_doc_cose_signed = libnsm.nsm_get_attestation_doc( # pylint:disable=c-extension-no-member
@@ -124,6 +140,8 @@ class NitroKms():
 
     def _kms_call(self, amz_target, request_parameters):
         """Call AWS KMS and return the response."""
+
+        print("start kms_call")
         method = 'POST'
         service = 'kms'
         host = f'kms.{self._region_name}.amazonaws.com'
@@ -155,6 +173,8 @@ class NitroKms():
         credential_scope = (
             date_stamp + '/' + self._region_name + '/' + service + '/' + 'aws4_request'
         )
+        print("string_to_sign in kms_call")
+
         string_to_sign = (
             f'{algorithm}\n'
             f'{amz_date}\n'
@@ -164,11 +184,13 @@ class NitroKms():
         signing_key = self._get_signature_key(
             self._aws_secret_access_key, date_stamp, self._region_name, service
         )
+        print("got signature key")
         signature = hmac.new(
             signing_key,
             (string_to_sign).encode('utf-8'),
             hashlib.sha256
         ).hexdigest()
+        print("hmac finished in kms_call")
         authorization_header = (
             algorithm + ' ' + \
             f'Credential={self._aws_access_key_id}/{credential_scope}, '
@@ -182,7 +204,9 @@ class NitroKms():
         if self._aws_session_token is not None:
             headers['X-Amz-Security-Token'] = self._aws_session_token
 
+        print("staring post in kms_call")
         response = requests.post(endpoint, data=request_parameters, headers=headers)
+        print("got response from kms call: ", str(response))
         if response.status_code != 200:
             error_type = None
             error_message = None
