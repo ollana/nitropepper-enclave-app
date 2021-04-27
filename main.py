@@ -48,7 +48,7 @@ def main():
         nitro_kms.set_credentials(kms_credentials)
         plain_text = process_decrypt(nitro_kms, cipher_text)
         print("decrypted: "+str(plain_text))
-        res = {'plaintext': str(plain_text)}
+        # res = {'plaintext': str(plain_text)}
         #
         # if 'action' in parent_app_data:
         #     if parent_app_data['action'] == 'generate_hash_and_pepper':
@@ -67,7 +67,7 @@ def main():
         #         'error': 'No action provided'
         #     }
 
-        conn.sendall(str.encode(res))
+        conn.sendall(str.encode(str(plain_text)))
 
         conn.close()
         print('Closed connection')
