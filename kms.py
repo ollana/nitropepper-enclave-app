@@ -13,7 +13,6 @@ from asn1crypto import cms
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.PublicKey import RSA
 from Crypto.Util.Padding import unpad
-# import boto3
 
 
 import libnsm
@@ -59,28 +58,6 @@ class NitroKms():
         if 'aws_session_token' in credentials:
             self._aws_session_token = credentials['aws_session_token']
 
-    def kms_generate_random(self, number_of_bytes):
-        """Call the KMS GenerateRandom API."""
-        if not isinstance(number_of_bytes, int):
-            raise ValueError('number_of_bytes must be an integer')
-        if number_of_bytes < 1 or number_of_bytes > 1024:
-            raise ValueError('number_of_bytes must be between 1 and 1024 (inclusive)')
-
-        amz_target = 'TrentService.GenerateRandom'
-        request_parameters = json.dumps({
-            "NumberOfBytes": number_of_bytes
-        })
-        return self._kms_call(amz_target, request_parameters)
-
-    def kms_encrypt(self, plaintext_bytes, kms_key_id):
-        """Call the KMS Encrypt API."""
-        amz_target = 'TrentService.Encrypt'
-        request_parameters = json.dumps({
-            "Plaintext": base64.b64encode(plaintext_bytes).decode('utf-8'),
-            "KeyId": kms_key_id,
-        })
-        return self._kms_call(amz_target, request_parameters)
-
     def kms_decrypt(self, ciphertext_blob):
         """Call the KMS Decrypt API."""
         print("kms_decrypt start")
@@ -113,20 +90,6 @@ class NitroKms():
         print("after _aws_cms_cipher_decrypt")
 
         return plaintext_bytes
-
-    #
-    # def _decrypt_with_boto(self, cipher_text):
-    #     client = boto3.client('kms')
-    #     recipient_parameters = json.dumps({
-    #             'KeyEncryptionAlgorithm': 'RSAES_OAEP_SHA_1',
-    #             'AttestationDocument': self._get_attestation_doc_b64()
-    #     })
-    #
-    #     response = client.decrypt(
-    #         CiphertextBlob=cipher_text,
-    #         Recipient=recipient_parameters
-    #     )
-
 
     def _get_attestation_doc_b64(self):
         """Get the attestation document from /dev/nsm."""
